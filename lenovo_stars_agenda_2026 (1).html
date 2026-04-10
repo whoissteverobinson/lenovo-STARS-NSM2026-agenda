@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Lenovo STARS National Training 2026 — Event Agenda</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: Arial, Helvetica, sans-serif; background: #fff; }
+.agenda { width: 1200px; background: #fff; border: 1px solid #e2e8f0; border-radius: 8px; overflow: hidden; }
+.top-bar { background: #1a2744; color: #fff; padding: 12px 20px; font-size: 14px; font-weight: 700; letter-spacing: 0.07em; }
+.grid-wrap { display: flex; }
+.time-col { width: 46px; flex-shrink: 0; background: #fff; border-right: 1px solid #e2e8f0; position: relative; }
+.days-row { display: grid; grid-template-columns: repeat(4, 1fr); flex: 1; }
+.day-col { border-right: 1px solid #e2e8f0; display: flex; flex-direction: column; min-width: 0; }
+.day-col:last-child { border-right: none; }
+.day-header { display: flex; justify-content: space-between; align-items: center; padding: 7px 10px; color: #fff; font-size: 12px; font-weight: 700; flex-shrink: 0; }
+.day-date { font-weight: 400; font-size: 11px; opacity: 0.9; }
+.timeline { position: relative; overflow: hidden; }
+.gridline { position: absolute; left: 0; right: 0; height: 1px; background: #e2e8f0; pointer-events: none; z-index: 0; }
+.time-label { position: absolute; right: 5px; font-size: 10px; color: #94a3b8; transform: translateY(-50%); white-space: nowrap; }
+.block { position: absolute; left: 3px; right: 3px; border-radius: 3px; overflow: hidden; display: flex; align-items: stretch; z-index: 1; }
+.block-accent { width: 5px; flex-shrink: 0; }
+.block-body { flex: 1; padding: 3px 6px; overflow: hidden; display: flex; flex-direction: column; justify-content: center; min-width: 0; }
+.block-time { font-size: 10.5px; line-height: 1.3; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; opacity: 0.75; }
+.block-label { font-size: 11.5px; font-weight: 700; line-height: 1.3; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.block-sub { font-size: 10px; line-height: 1.2; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; opacity: 0.7; }
+.legend { display: flex; gap: 22px; flex-wrap: wrap; padding: 10px 16px; border-top: 1px solid #e2e8f0; background: #f8fafc; }
+.leg { display: flex; align-items: center; gap: 6px; font-size: 11px; color: #475569; }
+.leg-swatch { width: 11px; height: 11px; border-radius: 2px; flex-shrink: 0; }
+</style>
+</head>
+<body>
+<div class="agenda">
+  <div class="top-bar">EVENT AGENDA &nbsp;&middot;&nbsp; LENOVO STARS NATIONAL TRAINING 2026</div>
+  <div class="grid-wrap">
+    <div class="time-col" id="timecol"></div>
+    <div class="days-row">
+      <div class="day-col">
+        <div class="day-header" style="background:#2563eb;"><span>Day 1</span><span class="day-date">May 5</span></div>
+        <div class="timeline" id="col0"></div>
+      </div>
+      <div class="day-col">
+        <div class="day-header" style="background:#0f766e;"><span>Day 2</span><span class="day-date">May 6</span></div>
+        <div class="timeline" id="col1"></div>
+      </div>
+      <div class="day-col">
+        <div class="day-header" style="background:#7c3aed;"><span>Day 3</span><span class="day-date">May 7</span></div>
+        <div class="timeline" id="col2"></div>
+      </div>
+      <div class="day-col">
+        <div class="day-header" style="background:#ea580c;"><span>Day 4</span><span class="day-date">May 8</span></div>
+        <div class="timeline" id="col3"></div>
+      </div>
+    </div>
+  </div>
+  <div class="legend">
+    <div class="leg"><div class="leg-swatch" style="background:#3b82f6;"></div>General session</div>
+    <div class="leg"><div class="leg-swatch" style="background:#10b981;"></div>Breakout / huddle (&#9733; = 2 regions attending)</div>
+    <div class="leg"><div class="leg-swatch" style="background:#94a3b8;"></div>Meal / Break</div>
+    <div class="leg"><div class="leg-swatch" style="background:#7c3aed;"></div>Social / Evening</div>
+    <div class="leg"><div class="leg-swatch" style="background:#f97316;"></div>Travel / Admin</div>
+  </div>
+</div>
+
+<script>
+const COLORS = {
+  general:  { fill: '#dbeafe', accent: '#3b82f6', text: '#1e3a5f' },
+  breakout: { fill: '#d1fae5', accent: '#10b981', text: '#14432a' },
+  meal:     { fill: '#f8fafc', accent: '#cbd5e1', text: '#475569' },
+  brk:      { fill: '#f1f5f9', accent: '#94a3b8', text: '#64748b' },
+  social:   { fill: '#ede9fe', accent: '#7c3aed', text: '#3b0764' },
+  travel:   { fill: '#fff7ed', accent: '#f97316', text: '#7c2d12' },
+};
+
+const MIN_H = { brk: 8, general: 20, meal: 20, breakout: 20, social: 20, travel: 20 };
+const GLOBAL_START = 7 * 60;
+const GLOBAL_END   = 21 * 60 + 30;
+const GLOBAL_TOTAL = GLOBAL_END - GLOBAL_START;
+const GAP = 2;
+
+function toMin(h, m) { return h * 60 + m; }
+
+function fmt(sh, sm, eh, em) {
+  const sap = sh < 12 ? 'am' : 'pm';
+  const eap = eh < 12 ? 'am' : 'pm';
+  const sd = sh > 12 ? sh - 12 : sh;
+  const ed = eh > 12 ? eh - 12 : eh;
+  const smm = sm === 0 ? '' : ':' + String(sm).padStart(2, '0');
+  const emm = em === 0 ? '' : ':' + String(em).padStart(2, '0');
+  if (sap === eap) return sd + smm + '\u2013' + ed + emm + eap;
+  return sd + smm + sap + '\u2013' + ed + emm + eap;
+}
+
+const DAYS = [
+  { sessions: [
+    ['travel',  7,0,  17,0, 'Travel & registration', ''],
+    ['social',  17,0, 21,0, 'Kick-off & welcome reception', 'Food, drink, fun'],
+  ]},
+  { sessions: [
+    ['meal',    7,0,  8,0,  'Breakfast', ''],
+    ['general', 8,0,  8,20, 'LM/JO open', ''],
+    ['general', 8,20, 8,50, 'Year in review', ''],
+    ['general', 8,50, 9,20, 'Awards', ''],
+    ['brk',     9,20, 9,30, 'Break', ''],
+    ['general', 9,30, 10,0, 'Lenovo', ''],
+    ['general', 10,0, 10,15,'Breakout game plan', ''],
+    ['general', 10,15,11,0, '\u2605 Tell the right story', ''],
+    ['general', 11,0, 11,45,'\u2605 Guide the comparison', ''],
+    ['brk',     11,45,11,55,'Break', ''],
+    ['meal',    11,55,12,55,'Lunch', ''],
+    ['brk',     12,55,13,5, 'Break', ''],
+    ['general', 13,5, 13,55,'Show the experience', ''],
+    ['breakout',13,55,14,55,'Field team breakouts', 'East \u00b7 Central \u00b7 West \u00b7 CA'],
+    ['brk',     14,55,15,5, 'Break', ''],
+    ['general', 15,5, 15,50,'Lenovo retail lab \u2605', ''],
+    ['breakout',15,50,16,40,'Best Buy', ''],
+    ['general', 16,40,17,25,'Reflection / team building / housekeeping', ''],
+    ['brk',     17,25,19,0, 'Break until dinner', ''],
+    ['social',  19,0, 21,0, 'Regional dinners', '3 groups'],
+  ]},
+  { sessions: [
+    ['meal',    7,0,  8,0,  'Breakfast', ''],
+    ['general', 8,0,  8,10, 'Housekeeping', ''],
+    ['breakout',8,10, 9,0,  'Alliance partner 1', ''],
+    ['breakout',9,0,  9,50, 'Alliance partner 2', ''],
+    ['brk',     9,50, 10,0, 'Break', ''],
+    ['breakout',10,0, 10,50,'Alliance partner 3', ''],
+    ['breakout',10,50,11,40,'Alliance partner 4', ''],
+    ['brk',     11,40,11,55,'Break', ''],
+    ['meal',    11,55,12,55,'Lunch', ''],
+    ['brk',     12,55,13,5, 'Break', ''],
+    ['breakout',13,5, 13,55,'Huddle: Yoga & IdeaPad', ''],
+    ['breakout',13,55,14,45,'Huddle: Legion', ''],
+    ['brk',     14,45,14,55,'Break', ''],
+    ['breakout',14,55,15,45,'Huddle: Chromebook / Tablets / SMBR', ''],
+    ['breakout',15,45,16,35,'Huddle: Competitive competence', 'Apple / HP / Dell'],
+    ['brk',     16,35,16,45,'Break', ''],
+    ['general', 16,45,17,5, 'What\u2019s hot / not w/ PMs', ''],
+    ['general', 17,5, 17,50,'Reflection / STARS lift-off / Creed', ''],
+    ['brk',     17,50,19,0, 'Break until party', ''],
+    ['social',  19,0, 21,30,'Closing party', ''],
+  ]},
+  { sessions: [
+    ['travel',  7,0,  8,0,  'Breakfast on own', 'Gift cards provided'],
+    ['travel',  8,0,  21,30,'Travel day', ''],
+  ]},
+];
+
+// Compute minimum px/min so every session is legible
+let PX_PER_MIN = 1.05;
+DAYS.forEach(({ sessions }) => {
+  sessions.forEach(([type, sh, sm, eh, em]) => {
+    const dur = toMin(eh, em) - toMin(sh, sm);
+    if (dur <= 0) return;
+    const minH = (MIN_H[type] || 20) + GAP * 2;
+    const needed = minH / dur;
+    if (needed > PX_PER_MIN) PX_PER_MIN = needed;
+  });
+});
+
+const TOTAL_PX = Math.ceil(GLOBAL_TOTAL * PX_PER_MIN);
+
+function y(min) { return (min - GLOBAL_START) * PX_PER_MIN; }
+
+// Time axis
+const timecol = document.getElementById('timecol');
+timecol.style.height = TOTAL_PX + 'px';
+timecol.style.position = 'relative';
+
+for (let hr = 7; hr <= 21; hr++) {
+  const min = toMin(hr, 0);
+  if (min > GLOBAL_END) break;
+  const lbl = document.createElement('div');
+  lbl.className = 'time-label';
+  lbl.style.top = y(min) + 'px';
+  const ap = hr < 12 ? 'am' : 'pm';
+  const d  = hr > 12 ? hr - 12 : hr;
+  lbl.textContent = d + ap;
+  timecol.appendChild(lbl);
+}
+
+// Day columns
+DAYS.forEach(({ sessions }, di) => {
+  const tl = document.getElementById('col' + di);
+  tl.style.height = TOTAL_PX + 'px';
+
+  for (let hr = 7; hr <= 21; hr++) {
+    const min = toMin(hr, 0);
+    if (min > GLOBAL_END) break;
+    const gl = document.createElement('div');
+    gl.className = 'gridline';
+    gl.style.top = y(min) + 'px';
+    tl.appendChild(gl);
+  }
+
+  sessions.forEach(([type, sh, sm, eh, em, label, sub]) => {
+    const startMin = toMin(sh, sm);
+    const endMin   = toMin(eh, em);
+    const topPx    = y(startMin) + GAP;
+    const blockH   = Math.max((endMin - startMin) * PX_PER_MIN - GAP * 2, 2);
+    const col      = COLORS[type] || COLORS.brk;
+
+    const block = document.createElement('div');
+    block.className = 'block';
+    block.style.top    = topPx + 'px';
+    block.style.height = blockH + 'px';
+    block.style.background = col.fill;
+
+    // Accent bar
+    const accent = document.createElement('div');
+    accent.className = 'block-accent';
+    accent.style.background = col.accent;
+    block.appendChild(accent);
+
+    // Text body
+    const body = document.createElement('div');
+    body.className = 'block-body';
+
+    const timeStr = fmt(sh, sm, eh, em);
+
+    if (blockH >= 30) {
+      // Two lines: time then bold label
+      const t = document.createElement('div');
+      t.className = 'block-time';
+      t.style.color = col.text;
+      t.textContent = timeStr;
+      body.appendChild(t);
+
+      const lb = document.createElement('div');
+      lb.className = 'block-label';
+      lb.style.color = col.text;
+      lb.textContent = label;
+      body.appendChild(lb);
+
+      if (sub && blockH >= 50) {
+        const sb = document.createElement('div');
+        sb.className = 'block-sub';
+        sb.style.color = col.text;
+        sb.textContent = sub;
+        body.appendChild(sb);
+      }
+    } else if (blockH >= 18) {
+      // One line: time + label
+      const t = document.createElement('div');
+      t.className = 'block-time';
+      t.style.color = col.text;
+      t.textContent = timeStr + '  ' + label;
+      body.appendChild(t);
+    } else if (blockH >= 11) {
+      // Time only
+      const t = document.createElement('div');
+      t.className = 'block-time';
+      t.style.color = col.text;
+      t.style.fontSize = '9.5px';
+      t.textContent = timeStr;
+      body.appendChild(t);
+    }
+    // Very thin breaks: colour bar only, no text
+
+    block.appendChild(body);
+    tl.appendChild(block);
+  });
+});
+</script>
+</body>
+</html>
