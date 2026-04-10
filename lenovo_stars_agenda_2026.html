@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -33,7 +34,10 @@ body { font-family: Arial, Helvetica, sans-serif; background: #fff; }
 <div class="agenda">
   <div class="top-bar">EVENT AGENDA &nbsp;&middot;&nbsp; LENOVO STARS NATIONAL TRAINING 2026</div>
   <div class="grid-wrap">
-    <div class="time-col" id="timecol"></div>
+    <div class="time-col">
+      <div id="timecol-spacer" style="background:#f8fafc;border-bottom:1px solid #e2e8f0;"></div>
+      <div id="timecol" style="position:relative;"></div>
+    </div>
     <div class="days-row">
       <div class="day-col">
         <div class="day-header" style="background:#2563eb;"><span>Day 1</span><span class="day-date">May 5</span></div>
@@ -74,7 +78,7 @@ const COLORS = {
 
 const MIN_H = { brk: 8, general: 20, meal: 20, breakout: 20, social: 20, travel: 20 };
 const GLOBAL_START = 7 * 60;
-const GLOBAL_END   = 21 * 60 + 30;
+const GLOBAL_END   = 23 * 60;
 const GLOBAL_TOTAL = GLOBAL_END - GLOBAL_START;
 const GAP = 2;
 
@@ -94,7 +98,7 @@ function fmt(sh, sm, eh, em) {
 const DAYS = [
   { sessions: [
     ['travel',  7,0,  17,0, 'Travel & registration', ''],
-    ['social',  17,0, 21,0, 'Kick-off & welcome reception', 'Food, drink, fun'],
+    ['social',  17,0, 20,0, 'Kick-off & welcome reception', 'Time TBC'],
   ]},
   { sessions: [
     ['meal',    7,0,  8,0,  'Breakfast', ''],
@@ -138,11 +142,11 @@ const DAYS = [
     ['general', 16,45,17,5, 'What\u2019s hot / not w/ PMs', ''],
     ['general', 17,5, 17,50,'Reflection / STARS lift-off / Creed', ''],
     ['brk',     17,50,19,0, 'Break until party', ''],
-    ['social',  19,0, 21,30,'Closing party', ''],
+    ['social',  19,0, 23,0, 'Closing party', ''],
   ]},
   { sessions: [
     ['travel',  7,0,  8,0,  'Breakfast on own', 'Gift cards provided'],
-    ['travel',  8,0,  21,30,'Travel day', ''],
+    ['travel',  8,0,  17,0, 'Travel day', ''],
   ]},
 ];
 
@@ -162,10 +166,15 @@ const TOTAL_PX = Math.ceil(GLOBAL_TOTAL * PX_PER_MIN);
 
 function y(min) { return (min - GLOBAL_START) * PX_PER_MIN; }
 
+// Match spacer height to day header height
+const anyHeader = document.querySelector('.day-header');
+const headerH = anyHeader ? anyHeader.getBoundingClientRect().height : 31;
+const spacer = document.getElementById('timecol-spacer');
+spacer.style.height = headerH + 'px';
+
 // Time axis
 const timecol = document.getElementById('timecol');
 timecol.style.height = TOTAL_PX + 'px';
-timecol.style.position = 'relative';
 
 for (let hr = 7; hr <= 21; hr++) {
   const min = toMin(hr, 0);
